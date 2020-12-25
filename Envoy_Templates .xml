@@ -1,0 +1,739 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<zabbix_export>
+    <version>4.4</version>
+    <date>2020-12-25T00:51:51Z</date>
+    <groups>
+        <group>
+            <name>envoy</name>
+        </group>
+    </groups>
+    <templates>
+        <template>
+            <template>envoy_clusters_discovery</template>
+            <name>envoy_clusters_discovery</name>
+            <description>This template is for clusters discovery behind an envoy proxy. Created by Zen Networks. For more information you could visit us at https://www.zen-networks.ma/</description>
+            <groups>
+                <group>
+                    <name>envoy</name>
+                </group>
+            </groups>
+            <applications>
+                <application>
+                    <name>clusters</name>
+                </application>
+                <application>
+                    <name>envoy</name>
+                </application>
+            </applications>
+            <items>
+                <item>
+                    <name>envoy: clusters_stats</name>
+                    <type>HTTP_AGENT</type>
+                    <key>envoy.clusters_stats</key>
+                    <delay>10m</delay>
+                    <history>1h</history>
+                    <trends>0</trends>
+                    <value_type>TEXT</value_type>
+                    <description>Getting data from a machine-readable version of the envoy status page.</description>
+                    <applications>
+                        <application>
+                            <name>envoy</name>
+                        </application>
+                    </applications>
+                    <preprocessing>
+                        <step>
+                            <type>JAVASCRIPT</type>
+                            <params>var lines = value.split(&quot;\n&quot;);
+var output = {};
+for (var i = 0; i &lt; lines.length; i++) {
+    if (lines[i].startsWith(&quot;cluster.&quot;) !== true){
+        var line = lines[i].match(/(.+): (.*)/);
+        if (line !== null) {
+           output[line[1]] = isNaN(line[2]) ? line[2] : Number(line[2]);
+       }
+    }
+}
+return JSON.stringify(output);</params>
+                        </step>
+                    </preprocessing>
+                    <url>{$STATUS.SCHEME}://{HOST.CONN}:{$STATUS.PORT}/{$ENVOY.STATUS.PATH}</url>
+                </item>
+                <item>
+                    <name>envoy: listener</name>
+                    <type>HTTP_AGENT</type>
+                    <key>envoy_listener</key>
+                    <delay>30s</delay>
+                    <history>1h</history>
+                    <trends>0</trends>
+                    <value_type>TEXT</value_type>
+                    <applications>
+                        <application>
+                            <name>envoy</name>
+                        </application>
+                    </applications>
+                    <preprocessing>
+                        <step>
+                            <type>JAVASCRIPT</type>
+                            <params>var lines = value.split(&quot;\n&quot;);
+var clusterf = new Array();
+var myArray = {};
+var param = [];
+var line = {};
+var j = 0;
+var re = /(?:[0-9]{1,3}\.){3}[0-9]{1,3}_\d*/g;
+var rex = /(?:\d.*)/g;
+
+var t =[];
+param.push(&quot;{\&quot;&quot;);
+
+for (var i = 0; i &lt; lines.length; i++) {
+    var line = lines[i].match(/(.+): (.*)/);
+    if (line !== null){
+    var prm = line[1].split(&quot;.&quot;);
+    if (prm[0] == &quot;listener&quot;){
+    var index = line[1].match(re);
+        if (index !== null ){
+        if (clusterf.indexOf(index.toString()) == -1){
+           param.push(&quot;}&quot;);
+	  clusterf.push(index.toString());
+         param.push(&quot;\&quot;&quot;+index+&quot;\&quot; :{&quot;);
+          
+	}
+        var h = prm.length - 1;
+        var value = line[2];
+        if (isNaN(value)){
+
+        value = -1;
+        }
+        //var value = isNaN(line[2]) ? line[2] : Number(line[2]);
+       if (prm[h].match(rex) !== null){
+        var d = &quot;\&quot;&quot;+prm[h].match(rex)+&quot;\&quot;&quot;+&quot; : &quot;+value;
+  
+        param.push(d);
+}
+}}
+}}
+param.push(&quot;}}&quot;);
+const unquoted = JSON.stringify(param).replace(/\\\&quot;/g, '\&quot;').replace(/\&quot;,\&quot;/g, ',').replace(/,}/g, '}').replace(/{,/g, '{').replace(/\[\&quot;{\&quot;},/g, '{').replace(/\&quot;\]/g, '');
+return unquoted ;</params>
+                        </step>
+                    </preprocessing>
+                    <url>{$STATUS.SCHEME}://{HOST.CONN}:{$STATUS.PORT}/{$ENVOY.STATUS.PATH}</url>
+                </item>
+                <item>
+                    <name>envoy: stats</name>
+                    <type>HTTP_AGENT</type>
+                    <key>envoy_stats</key>
+                    <history>1h</history>
+                    <trends>0</trends>
+                    <value_type>TEXT</value_type>
+                    <applications>
+                        <application>
+                            <name>clusters</name>
+                        </application>
+                    </applications>
+                    <preprocessing>
+                        <step>
+                            <type>JAVASCRIPT</type>
+                            <params>var lines = value.split(&quot;\n&quot;);
+var clusterf = new Array();
+var myArray = {};
+var param = [];
+var line = {};
+var j = 0;
+var t =[];
+param.push(&quot;{\&quot;&quot;);
+
+for (var i = 0; i &lt; lines.length; i++) {
+    var line = lines[i].match(/(.+): (.*)/);
+    if (line !== null){
+    var prm = line[1].split(&quot;.&quot;);
+    if (prm[0] == &quot;cluster&quot;){
+        if (clusterf.indexOf(prm[1])== -1){
+           param.push(&quot;}&quot;);
+	  clusterf.push(prm[1]);
+         param.push(&quot;\&quot;&quot;+prm[1]+&quot;\&quot; :{&quot;);
+          
+	}
+        var h = prm.length - 1;
+        var value = line[2];
+        if (isNaN(value)){
+
+        value = -1;
+        }
+        //var value = isNaN(line[2]) ? line[2] : Number(line[2]);
+        var d = &quot;\&quot;&quot;+prm[h]+&quot;\&quot;&quot;+&quot; : &quot;+value;
+  
+        param.push(d);
+
+}
+}}
+param.push(&quot;}}&quot;);
+const unquoted = JSON.stringify(param).replace(/\\\&quot;/g, '\&quot;').replace(/\&quot;,\&quot;/g, ',').replace(/,}/g, '}').replace(/{,/g, '{').replace(/\[\&quot;{\&quot;},/g, '{').replace(/\&quot;\]/g, '');
+return unquoted ;</params>
+                        </step>
+                    </preprocessing>
+                    <url>{$STATUS.SCHEME}://{HOST.CONN}:{$STATUS.PORT}/{$ENVOY.STATUS.PATH}</url>
+                </item>
+                <item>
+                    <name>envoy_filesystem_flushed_by_timer</name>
+                    <type>DEPENDENT</type>
+                    <key>filesystem.flushed_by_timer</key>
+                    <delay>0</delay>
+                    <applications>
+                        <application>
+                            <name>envoy</name>
+                        </application>
+                    </applications>
+                    <preprocessing>
+                        <step>
+                            <type>JSONPATH</type>
+                            <params>$.[&quot;filesystem.flushed_by_timer&quot;]</params>
+                        </step>
+                    </preprocessing>
+                    <master_item>
+                        <key>envoy.clusters_stats</key>
+                    </master_item>
+                </item>
+                <item>
+                    <name>envoy_filesystem_reopen_failed</name>
+                    <type>DEPENDENT</type>
+                    <key>filesystem.reopen_failed</key>
+                    <delay>0</delay>
+                    <applications>
+                        <application>
+                            <name>envoy</name>
+                        </application>
+                    </applications>
+                    <preprocessing>
+                        <step>
+                            <type>JSONPATH</type>
+                            <params>$.[&quot;filesystem.reopen_failed&quot;]</params>
+                        </step>
+                    </preprocessing>
+                    <master_item>
+                        <key>envoy.clusters_stats</key>
+                    </master_item>
+                </item>
+                <item>
+                    <name>envoy_filesystem_write_buffered</name>
+                    <type>DEPENDENT</type>
+                    <key>filesystem.write_buffered</key>
+                    <delay>0</delay>
+                    <applications>
+                        <application>
+                            <name>envoy</name>
+                        </application>
+                    </applications>
+                    <preprocessing>
+                        <step>
+                            <type>JSONPATH</type>
+                            <params>$.[&quot;filesystem.write_buffered&quot;]</params>
+                        </step>
+                    </preprocessing>
+                    <master_item>
+                        <key>envoy.clusters_stats</key>
+                    </master_item>
+                </item>
+                <item>
+                    <name>envoy_filesystem_write_completed</name>
+                    <type>DEPENDENT</type>
+                    <key>filesystem.write_completed</key>
+                    <delay>0</delay>
+                    <applications>
+                        <application>
+                            <name>envoy</name>
+                        </application>
+                    </applications>
+                    <preprocessing>
+                        <step>
+                            <type>JSONPATH</type>
+                            <params>$.[&quot;filesystem.write_completed&quot;]</params>
+                        </step>
+                    </preprocessing>
+                    <master_item>
+                        <key>envoy.clusters_stats</key>
+                    </master_item>
+                </item>
+                <item>
+                    <name>envoy_filesystem_write_failed</name>
+                    <type>DEPENDENT</type>
+                    <key>filesystem.write_failed</key>
+                    <delay>0</delay>
+                    <applications>
+                        <application>
+                            <name>envoy</name>
+                        </application>
+                    </applications>
+                    <preprocessing>
+                        <step>
+                            <type>JSONPATH</type>
+                            <params>$.[&quot;filesystem.write_failed&quot;]</params>
+                        </step>
+                    </preprocessing>
+                    <master_item>
+                        <key>envoy.clusters_stats</key>
+                    </master_item>
+                </item>
+                <item>
+                    <name>envoy_filesystem_write_total_buffered</name>
+                    <type>DEPENDENT</type>
+                    <key>filesystem.write_total_buffered</key>
+                    <delay>0</delay>
+                    <applications>
+                        <application>
+                            <name>envoy</name>
+                        </application>
+                    </applications>
+                    <preprocessing>
+                        <step>
+                            <type>JSONPATH</type>
+                            <params>$.[&quot;filesystem.write_total_buffered&quot;]</params>
+                        </step>
+                    </preprocessing>
+                    <master_item>
+                        <key>envoy.clusters_stats</key>
+                    </master_item>
+                </item>
+                <item>
+                    <name>envoy_server_memory_allocated</name>
+                    <type>DEPENDENT</type>
+                    <key>server.memory_allocated</key>
+                    <delay>0</delay>
+                    <units>Bytes</units>
+                    <applications>
+                        <application>
+                            <name>envoy</name>
+                        </application>
+                    </applications>
+                    <preprocessing>
+                        <step>
+                            <type>JSONPATH</type>
+                            <params>$.[&quot;server.memory_allocated&quot;]</params>
+                        </step>
+                    </preprocessing>
+                    <master_item>
+                        <key>envoy.clusters_stats</key>
+                    </master_item>
+                </item>
+                <item>
+                    <name>envoy_server_memory_heap_size</name>
+                    <type>DEPENDENT</type>
+                    <key>server.memory_heap_size</key>
+                    <delay>0</delay>
+                    <units>Bytes</units>
+                    <applications>
+                        <application>
+                            <name>envoy</name>
+                        </application>
+                    </applications>
+                    <preprocessing>
+                        <step>
+                            <type>JSONPATH</type>
+                            <params>$.[&quot;server.memory_heap_size&quot;]</params>
+                        </step>
+                    </preprocessing>
+                    <master_item>
+                        <key>envoy.clusters_stats</key>
+                    </master_item>
+                </item>
+                <item>
+                    <name>envoy_server_memory_physical_size</name>
+                    <type>DEPENDENT</type>
+                    <key>server.memory_physical_size</key>
+                    <delay>0</delay>
+                    <units>Bytes</units>
+                    <applications>
+                        <application>
+                            <name>envoy</name>
+                        </application>
+                    </applications>
+                    <preprocessing>
+                        <step>
+                            <type>JSONPATH</type>
+                            <params>$.[&quot;server.memory_physical_size&quot;]</params>
+                        </step>
+                    </preprocessing>
+                    <master_item>
+                        <key>envoy.clusters_stats</key>
+                    </master_item>
+                </item>
+                <item>
+                    <name>envoy_server_total_connections</name>
+                    <type>DEPENDENT</type>
+                    <key>server.total_connections</key>
+                    <delay>0</delay>
+                    <applications>
+                        <application>
+                            <name>envoy</name>
+                        </application>
+                    </applications>
+                    <preprocessing>
+                        <step>
+                            <type>JSONPATH</type>
+                            <params>$.[&quot;server.total_connections&quot;]</params>
+                        </step>
+                    </preprocessing>
+                    <master_item>
+                        <key>envoy.clusters_stats</key>
+                    </master_item>
+                </item>
+                <item>
+                    <name>envoy_server_uptime</name>
+                    <type>DEPENDENT</type>
+                    <key>server.uptime</key>
+                    <delay>0</delay>
+                    <units>uptime</units>
+                    <applications>
+                        <application>
+                            <name>envoy</name>
+                        </application>
+                    </applications>
+                    <preprocessing>
+                        <step>
+                            <type>JSONPATH</type>
+                            <params>$.[&quot;server.uptime&quot;]</params>
+                        </step>
+                    </preprocessing>
+                    <master_item>
+                        <key>envoy.clusters_stats</key>
+                    </master_item>
+                </item>
+            </items>
+            <discovery_rules>
+                <discovery_rule>
+                    <name>envoy: get_clusers_name/Parameters</name>
+                    <type>HTTP_AGENT</type>
+                    <key>envoy.get_clusers_name_parameters</key>
+                    <delay>1h</delay>
+                    <filter>
+                        <evaltype>OR</evaltype>
+                        <conditions>
+                            <condition>
+                                <macro>{#PRM}</macro>
+                                <value>upstream_cx_length_ms</value>
+                                <operator>NOT_MATCHES_REGEX</operator>
+                                <formulaid>A</formulaid>
+                            </condition>
+                            <condition>
+                                <macro>{#PRM}</macro>
+                                <value>cx_open</value>
+                                <operator>NOT_MATCHES_REGEX</operator>
+                                <formulaid>B</formulaid>
+                            </condition>
+                            <condition>
+                                <macro>{#PRM}</macro>
+                                <value>cx_pool_open</value>
+                                <operator>NOT_MATCHES_REGEX</operator>
+                                <formulaid>C</formulaid>
+                            </condition>
+                            <condition>
+                                <macro>{#PRM}</macro>
+                                <value>rq_open</value>
+                                <operator>NOT_MATCHES_REGEX</operator>
+                                <formulaid>D</formulaid>
+                            </condition>
+                            <condition>
+                                <macro>{#PRM}</macro>
+                                <value>rq_pending_open</value>
+                                <operator>NOT_MATCHES_REGEX</operator>
+                                <formulaid>E</formulaid>
+                            </condition>
+                            <condition>
+                                <macro>{#PRM}</macro>
+                                <value>rq_retry_open</value>
+                                <operator>NOT_MATCHES_REGEX</operator>
+                                <formulaid>F</formulaid>
+                            </condition>
+                        </conditions>
+                    </filter>
+                    <lifetime>3d</lifetime>
+                    <item_prototypes>
+                        <item_prototype>
+                            <name>{#NAME} : {#PRM}</name>
+                            <type>DEPENDENT</type>
+                            <key>envoy[{#NAME}_{#PRM}]</key>
+                            <delay>0</delay>
+                            <history>30d</history>
+                            <value_type>FLOAT</value_type>
+                            <applications>
+                                <application>
+                                    <name>clusters</name>
+                                </application>
+                            </applications>
+                            <preprocessing>
+                                <step>
+                                    <type>JSONPATH</type>
+                                    <params>$.[&quot;{#NAME}&quot;].[&quot;{#PRM}&quot;]</params>
+                                </step>
+                            </preprocessing>
+                            <master_item>
+                                <key>envoy_stats</key>
+                            </master_item>
+                        </item_prototype>
+                    </item_prototypes>
+                    <url>{$STATUS.SCHEME}://{HOST.CONN}:{$STATUS.PORT}/{$ENVOY.STATUS.PATH}</url>
+                    <lld_macro_paths>
+                        <lld_macro_path>
+                            <lld_macro>{#NAME}</lld_macro>
+                            <path>$.name</path>
+                        </lld_macro_path>
+                        <lld_macro_path>
+                            <lld_macro>{#PRM}</lld_macro>
+                            <path>$.prm</path>
+                        </lld_macro_path>
+                    </lld_macro_paths>
+                    <preprocessing>
+                        <step>
+                            <type>JAVASCRIPT</type>
+                            <params>var lines = value.split(&quot;\n&quot;);
+var output = new Array();
+var t = [];
+var line = {};
+var j = 0;
+for (var i = 0; i &lt; lines.length; i++) {
+    var line = lines[i].match(/(.+): (.*)/);
+    if (line !== null){
+    var prm = line[1].split(&quot;.&quot;);
+    var h = prm.length - 1;
+    if (prm[0] == &quot;cluster&quot;){
+        output.push(prm[h]);
+        t[j]=JSON.stringify({&quot;name&quot;: prm[1] , &quot;prm&quot;: prm[h]});
+        j++;
+}     
+}
+}
+const unquoted = JSON.stringify(t).replace(/\&quot;{/g, '{').replace(/}\&quot;/g, '}').replace(/\\\&quot;/g, '\&quot;');
+return unquoted;</params>
+                        </step>
+                    </preprocessing>
+                </discovery_rule>
+                <discovery_rule>
+                    <name>envoy: listener</name>
+                    <type>HTTP_AGENT</type>
+                    <key>envoy.listener</key>
+                    <delay>1h</delay>
+                    <filter>
+                        <evaltype>OR</evaltype>
+                    </filter>
+                    <lifetime>3d</lifetime>
+                    <item_prototypes>
+                        <item_prototype>
+                            <name>listener_{#LISTENER}_1xx</name>
+                            <type>DEPENDENT</type>
+                            <key>listener[{#LISTENER}_1xx]</key>
+                            <delay>0</delay>
+                            <value_type>FLOAT</value_type>
+                            <applications>
+                                <application>
+                                    <name>envoy</name>
+                                </application>
+                            </applications>
+                            <preprocessing>
+                                <step>
+                                    <type>JSONPATH</type>
+                                    <params>$.[&quot;{#LISTENER}&quot;].[&quot;1xx&quot;]</params>
+                                </step>
+                            </preprocessing>
+                            <master_item>
+                                <key>envoy_listener</key>
+                            </master_item>
+                        </item_prototype>
+                        <item_prototype>
+                            <name>listener_{#LISTENER}_2xx</name>
+                            <type>DEPENDENT</type>
+                            <key>listener[{#LISTENER}_2xx]</key>
+                            <delay>0</delay>
+                            <value_type>FLOAT</value_type>
+                            <applications>
+                                <application>
+                                    <name>envoy</name>
+                                </application>
+                            </applications>
+                            <preprocessing>
+                                <step>
+                                    <type>JSONPATH</type>
+                                    <params>$.[&quot;{#LISTENER}&quot;].[&quot;2xx&quot;]</params>
+                                </step>
+                            </preprocessing>
+                            <master_item>
+                                <key>envoy_listener</key>
+                            </master_item>
+                        </item_prototype>
+                        <item_prototype>
+                            <name>listener_{#LISTENER}_3xx</name>
+                            <type>DEPENDENT</type>
+                            <key>listener[{#LISTENER}_3xx]</key>
+                            <delay>0</delay>
+                            <value_type>FLOAT</value_type>
+                            <applications>
+                                <application>
+                                    <name>envoy</name>
+                                </application>
+                            </applications>
+                            <preprocessing>
+                                <step>
+                                    <type>JSONPATH</type>
+                                    <params>$.[&quot;{#LISTENER}&quot;].[&quot;3xx&quot;]</params>
+                                </step>
+                            </preprocessing>
+                            <master_item>
+                                <key>envoy_listener</key>
+                            </master_item>
+                        </item_prototype>
+                        <item_prototype>
+                            <name>listener_{#LISTENER}_4xx</name>
+                            <type>DEPENDENT</type>
+                            <key>listener[{#LISTENER}_4xx]</key>
+                            <delay>0</delay>
+                            <value_type>FLOAT</value_type>
+                            <applications>
+                                <application>
+                                    <name>envoy</name>
+                                </application>
+                            </applications>
+                            <preprocessing>
+                                <step>
+                                    <type>JSONPATH</type>
+                                    <params>$.[&quot;{#LISTENER}&quot;].[&quot;4xx&quot;]</params>
+                                </step>
+                            </preprocessing>
+                            <master_item>
+                                <key>envoy_listener</key>
+                            </master_item>
+                        </item_prototype>
+                        <item_prototype>
+                            <name>listener_{#LISTENER}_5xx</name>
+                            <type>DEPENDENT</type>
+                            <key>listener[{#LISTENER}_5xx]</key>
+                            <delay>0</delay>
+                            <value_type>FLOAT</value_type>
+                            <applications>
+                                <application>
+                                    <name>envoy</name>
+                                </application>
+                            </applications>
+                            <preprocessing>
+                                <step>
+                                    <type>JSONPATH</type>
+                                    <params>$.[&quot;{#LISTENER}&quot;].[&quot;5xx&quot;]</params>
+                                </step>
+                            </preprocessing>
+                            <master_item>
+                                <key>envoy_listener</key>
+                            </master_item>
+                        </item_prototype>
+                    </item_prototypes>
+                    <trigger_prototypes>
+                        <trigger_prototype>
+                            <expression>({envoy_clusters_discovery:listener[{#LISTENER}_2xx].last()}/({envoy_clusters_discovery:listener[{#LISTENER}_1xx].last()}+{envoy_clusters_discovery:listener[{#LISTENER}_2xx].last()}+{envoy_clusters_discovery:listener[{#LISTENER}_3xx].last()}+{envoy_clusters_discovery:listener[{#LISTENER}_4xx].last()}+{envoy_clusters_discovery:listener[{#LISTENER}_5xx].last()}))&lt;0.95</expression>
+                            <name>response_code 200</name>
+                            <priority>WARNING</priority>
+                            <manual_close>YES</manual_close>
+                        </trigger_prototype>
+                    </trigger_prototypes>
+                    <graph_prototypes>
+                        <graph_prototype>
+                            <name>response_code {#LISTENER}</name>
+                            <graph_items>
+                                <graph_item>
+                                    <color>3F51B5</color>
+                                    <item>
+                                        <host>envoy_clusters_discovery</host>
+                                        <key>listener[{#LISTENER}_1xx]</key>
+                                    </item>
+                                </graph_item>
+                                <graph_item>
+                                    <sortorder>1</sortorder>
+                                    <color>4CAF50</color>
+                                    <item>
+                                        <host>envoy_clusters_discovery</host>
+                                        <key>listener[{#LISTENER}_2xx]</key>
+                                    </item>
+                                </graph_item>
+                                <graph_item>
+                                    <sortorder>2</sortorder>
+                                    <color>CC6600</color>
+                                    <item>
+                                        <host>envoy_clusters_discovery</host>
+                                        <key>listener[{#LISTENER}_3xx]</key>
+                                    </item>
+                                </graph_item>
+                                <graph_item>
+                                    <sortorder>3</sortorder>
+                                    <color>FF0000</color>
+                                    <item>
+                                        <host>envoy_clusters_discovery</host>
+                                        <key>listener[{#LISTENER}_4xx]</key>
+                                    </item>
+                                </graph_item>
+                                <graph_item>
+                                    <sortorder>4</sortorder>
+                                    <color>FFFF00</color>
+                                    <item>
+                                        <host>envoy_clusters_discovery</host>
+                                        <key>listener[{#LISTENER}_5xx]</key>
+                                    </item>
+                                </graph_item>
+                            </graph_items>
+                        </graph_prototype>
+                    </graph_prototypes>
+                    <url>{$STATUS.SCHEME}://{HOST.CONN}:{$STATUS.PORT}/{$ENVOY.STATUS.PATH}</url>
+                    <lld_macro_paths>
+                        <lld_macro_path>
+                            <lld_macro>{#LISTENER}</lld_macro>
+                            <path>$.listener</path>
+                        </lld_macro_path>
+                    </lld_macro_paths>
+                    <preprocessing>
+                        <step>
+                            <type>JAVASCRIPT</type>
+                            <params>var lines = value.split(&quot;\n&quot;);
+var output = new Array();
+var t = [];
+var re = /(?:[0-9]{1,3}\.){3}[0-9]{1,3}_\d*/g;
+var line = {};
+var j = 0;
+for (var i = 0; i &lt; lines.length; i++) {
+    var line = lines[i].match(/(.+): (.*)/);
+    if (line !== null){
+    var prm = line[1].split(&quot;.&quot;);
+    var h = prm.length - 1;
+    if (prm[0] == &quot;listener&quot;){
+        var index = line[1].match(re);
+        if (index !== null ){
+     if (output.indexOf(index.toString())== -1){
+	  output.push(index.toString());
+          t[j]=JSON.stringify({&quot;listener&quot;: index});
+        j++;
+	}
+}     
+}}
+}
+const unquoted = JSON.stringify(t).replace(/\&quot;{/g, '{').replace(/}\&quot;/g, '}').replace(/\\\&quot;/g, '\&quot;').replace(/\:\[/g, '\:').replace(/\]\}/g, '\}');
+return unquoted;</params>
+                        </step>
+                    </preprocessing>
+                </discovery_rule>
+            </discovery_rules>
+            <macros>
+                <macro>
+                    <macro>{$CLUSTERS.STATUS.PATH}</macro>
+                    <value>clusters</value>
+                </macro>
+                <macro>
+                    <macro>{$ENVOY.STATUS.PATH}</macro>
+                    <value>stats</value>
+                </macro>
+                <macro>
+                    <macro>{$STATUS.PORT}</macro>
+                    <value>5000</value>
+                </macro>
+                <macro>
+                    <macro>{$STATUS.SCHEME}</macro>
+                    <value>http</value>
+                </macro>
+            </macros>
+        </template>
+    </templates>
+</zabbix_export>
