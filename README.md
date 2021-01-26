@@ -2,7 +2,7 @@
 
 [![N|Solid](https://www.cfcim.org/wp-content/uploads/members/14191/14191-ZEN%20NETWORKS-2017-12-16-23-37-38-194x150.png)](https://www.zen-networks.ma/)
 
-This Template is created by  Courtesy of [Zen Networks](https://www.zen-networks.ma/) in order to monitor envoy proxy Using ZABBIX.
+This Template is created by [Zen Networks](https://www.zen-networks.ma/) for envoy proxy monitoring Using ZABBIX.
 
 The about Envoy version which we have tested the template.
   -  source revision : 4ff61b89ae24a0c86a4c1a478cc7c3886f389747
